@@ -2,52 +2,87 @@ package br.unisinos.edu.teoria.encoder;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+
+import br.unisinos.edu.teoria.EncondingType;
+import br.unisinos.edu.teoria.Util;
 
 public class Program {
-	public static void main(final String[] args) {
 
-		for (final String arg : args) {
-			System.out.println(arg);
-		}
-
-		byte[] bytes = new byte[0];
+	private static void writeHeader(final EncondingType encType, final Integer divider) {
 		try {
-			bytes = Files.readAllBytes(Path.of(Program.class.getResource("resources/arquivo").toURI()));
-		} catch (IOException | URISyntaxException ioex) {
-			ioex.printStackTrace();
-		}
 
-		for (final byte b : bytes) {
-			System.out.println(b);
-		}
+			if (encType == EncondingType.Golomb && (divider == null || divider < 1)) {
+				System.out.println("Em caso de codificação Golomb é necessario ser informado um divisor >= 1");
+				System.exit(0);
+			}
 
-		writeHeader(EncondingType.Delta);
-	}
+			File saida = Util.pathResources("saida").toFile();
+			if (saida.exists()) {
+				saida.delete();
+			}
+			saida.createNewFile();
 
-	private static void writeHeader(final EncondingType encType) {
-		try {
-			var outFile = Files.createFile(new File("./resources/saida").toPath());
-
-			Files.write(outFile, new byte[] { encType.getCode() });
+			Files.write(saida.toPath(), new byte[] { encType.getCode() });
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 
-	public enum EncondingType {
-		Golomb(0), EliasGama(1), Fibonacci(2), Unary(3), Delta(4);
+	private static void writeHeader(final EncondingType encType) {
+		writeHeader(encType, 0);
+	}
 
-		private final byte code;
+	private static void writeContent(byte[] bytes) {
+		writeContent(bytes, true);
+	}
 
-		private EncondingType(final int code) {
-			this.code = (byte) code;
-		}
+	private static void writeContent(byte[] bytes, boolean append) {
+		try {
+			File saida = Util.pathResources("saida").toFile();
 
-		public byte getCode() {
-			return code;
+			if (append) {
+				Files.write(saida.toPath(), bytes, StandardOpenOption.APPEND);
+			} else {
+				Files.write(saida.toPath(), bytes);
+			}
+
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
+
+	public static void main(final String[] args) {
+		try {
+
+			// Print argumentos.
+			for (final String arg : args) {
+				System.out.println(arg);
+			}
+
+			// Lendo bytes do arquivo de entrada.
+			byte[] bytes = new byte[0];
+			bytes = Files.readAllBytes(Util.pathResources("arquivo"));
+
+			// PrintBytes
+			for (final byte b : bytes) {
+				System.out.println(b);
+			}
+
+			writeHeader(EncondingType.Delta);
+
+			byte[] bytesApend = new byte[] { 'A', 'P', 'E', 'N', 'D', 'A', 'N', 'D', 'O', ' ' };
+
+			// Escrevendo APENDANDO
+			writeContent(bytesApend);
+
+			// ESCREVENDO A ENTRADA NOVAMENTE.
+			writeContent(bytes);
+
+		} catch (Exception ioex) {
+			ioex.printStackTrace();
+		}
+	}
+
 }
